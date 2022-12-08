@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type IFilesMetadata {
+  mimeType String
+}
+
+type IImgAndSondData {
+  id   String @db.ObjectId
+  link String
+}
+
+model User {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  email      String      @unique
+  password   String
+  age        Int
+  bornDate   DateTime
+  collection Collection?
+  premium    Boolean
+  gender     String
+  createdAt  DateTime    @default(now())
+
+  @@map("users")
+}
+
+model Collection {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  playlistIDs String[]   @default([]) @db.ObjectId
+  playlist    Playlist[] @relation(fields: [playlistIDs], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+  userId      String     @unique @db.ObjectId
+
+  @@map("collections")
+}
+
+model Playlist {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  userId        String       @db.ObjectId
+  songIDs       String[]     @default([]) @db.ObjectId
+  songs         Song[]       @relation(fields: [songIDs], references: [id])
+  collectionIDs String[]     @default([]) @db.ObjectId
+  collection    Collection[] @relation(fields: [collectionIDs], references: [id])
+  createdAt     DateTime     @default(now())
+
+  @@map("playlists")
+}
+
+model Song {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  authorIDs   String[]        @default([]) @db.ObjectId
+  authors     Author[]        @relation(fields: [authorIDs], references: [id])
+  img_data      IImgAndSondData
+  song_data     IImgAndSondData
+  playlistIDs String[]        @default([]) @db.ObjectId
+  playlists   Playlist[]      @relation(fields: [playlistIDs], references: [id])
+  createdAt   DateTime        @default(now())
+
+  @@map("songs")
+}
+
+model Author {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  unique_id Int      @unique
+  name      String
+  songIDs   String[] @default([]) @db.ObjectId
+  songs     Song[]   @relation(fields: [songIDs], references: [id])
+  createdAt DateTime @default(now())
+
+  @@map("author")
+}
+
+model song_files_chunks {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  data     Bytes
+  files_id String @db.ObjectId
+  n        Int
+
+  @@unique([files_id, n], map: "files_id_1_n_1")
+  @@map("song_files.chunks")
+}
+
+model song_files_files {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  chunkSize  Int
+  filename   String
+  length     Int
+  metadata   IFilesMetadata
+  uploadDate DateTime       @db.Date
+
+  @@index([filename, uploadDate], map: "filename_1_uploadDate_1")
+  @@map("song_files.files")
+}
+
+model img_files_chunks {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  data     Bytes
+  files_id String @db.ObjectId
+  n        Int
+
+  @@unique([files_id, n], map: "files_id_1_n_1")
+  @@map("img_files.chunks")
+}
+
+model img_files_files {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  chunkSize  Int
+  filename   String
+  length     Int
+  metadata   IFilesMetadata
+  uploadDate DateTime       @db.Date
+
+  @@index([filename, uploadDate], map: "filename_1_uploadDate_1")
+  @@map("img_files.files")
+}
